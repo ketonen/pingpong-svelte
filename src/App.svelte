@@ -16,10 +16,13 @@
   };
 
   let ballPosition = { x: 50, y: 50 };
+  let ballSpeedMultiplier;
 
   let ballXDirection;
   let ballXMomentum;
-  $: ballXDirectionWithMomentum = ballXDirection * ballXMomentum;
+
+
+  $: ballXDirectionWithMomentum = ballXDirection + ballXMomentum;
   let ballYDirection = 1;
 
   function callbackFunction(event) {
@@ -30,10 +33,11 @@
 
   let resetGame = () => {
     gameType = undefined;
+    ballSpeedMultiplier = 3;
     own = 0;
     enemy = 0;
     ballXDirection = 1;
-    ballXMomentum = 1;
+    ballXMomentum = 0;
   };
 
   let initializeControls = () => {
@@ -64,22 +68,30 @@
     clickTimeout = setTimeout(clickTimer, 10);
   };
 
-  let ballOverlapOwn = (ball, rect2) => {
-    let b = ball.getBoundingClientRect();
-    let r = rect2.getBoundingClientRect();
-
+  let ballOverlapOwn = (b, r) => {
     return b.right >= r.left && b.left <= r.right && b.bottom >= r.top;
   };
 
-  let ballOverlapEnemy = (ball, rect2) => {
-    let b = ball.getBoundingClientRect();
-    let r = rect2.getBoundingClientRect();
+  let ballOverlapEnemy = (b, r) => {
     return b.right >= r.left && b.left <= r.right && b.top <= r.bottom;
   };
 
   let ballTimeout;
   let clickTimeout;
-  let ballSpeedMultiplier = 3;
+
+  let calculateMomentum = (keys, ballXDirection, ballXMomentum) => {
+    if (keys.rightDown) {
+      if (ballXDirection === 1) {
+        return ballXMomentum * -1 + 0.5;
+      } else return ballXMomentum - 0.5;
+    } else if (keys.leftDown) {
+      if (ballXDirection === -1) {
+        return ballXMomentum * -1 - 0.5;
+      } else return ballXMomentum + 0.5;
+    }
+
+    return ballXMomentum;
+  };
 
   let createBall = () => {
     let ballTimer = () => {
@@ -88,13 +100,19 @@
       ballPosition.x =
         ballPosition.x + ballXDirectionWithMomentum * ballSpeedMultiplier;
       ballPosition.y = ballPosition.y + ballYDirection * ballSpeedMultiplier;
-      let ballElement = document.getElementById("ball");
+      let ballElement = document.getElementById("ball").getBoundingClientRect();
       if (
         ballYDirection === 1 &&
-        ballOverlapOwn(ballElement, document.getElementById("own"))
+        ballOverlapOwn(
+          ballElement,
+          document.getElementById("own").getBoundingClientRect()
+        )
       ) {
-        if (ownKeys.rightDown) ballXMomentum = ballXMomentum + 0.5;
-        else if (ownKeys.leftDown) ballXMomentum = ballXMomentum - 0.5;
+        ballXMomentum = calculateMomentum(
+          ownKeys,
+          ballXDirection,
+          ballXMomentum
+        );
 
         ballYDirection = -ballYDirection;
         if (ballSpeedMultiplier < 10)
@@ -102,22 +120,32 @@
       }
       if (
         ballYDirection === -1 &&
-        ballOverlapEnemy(ballElement, document.getElementById("enemy"))
+        ballOverlapEnemy(
+          ballElement,
+          document.getElementById("enemy").getBoundingClientRect()
+        )
       ) {
-        if (enemyKeys.leftDown) ballXMomentum = ballXMomentum - 0.5;
-        else if (enemyKeys.rightDown) ballXMomentum = ballXMomentum + 0.5;
+        ballXMomentum = calculateMomentum(
+          enemyKeys,
+          ballXDirection,
+          ballXMomentum
+        );
 
         ballYDirection = -ballYDirection;
         if (ballSpeedMultiplier < 7)
           ballSpeedMultiplier = ballSpeedMultiplier * 1.1;
       } else {
-        if (ballPosition.x - 5 < 0) ballXDirection = 1;
-        else if (ballPosition.x + 50 > window.innerWidth) ballXDirection = -1;
+        if (ballElement.left <= 0) {
+          console.log("HIT LEFT WALL");
+          ballXDirection = 1;
+          ballXMomentum = ballXMomentum * -1;
+        } else if (ballElement.right >= window.innerWidth) {
+          console.log("HIT RIGHT WALL");
+          ballXDirection = -1;
+          ballXMomentum = ballXMomentum * -1;
+        }
 
-        if (
-          ballPosition.y - 5 < 0 ||
-          ballPosition.y + 20 > window.innerHeight
-        ) {
+        if (ballElement.top <= 0 || ballElement.bottom >= window.innerHeight) {
           ballYDirection = -ballYDirection;
           resetGame();
           clearTimeout(clickTimeout);
@@ -138,6 +166,8 @@
 {:else}
   <Bar type={'own'} position={own} />
   <Bar type={'enemy'} position={enemy} />
-  <Ball ball={ballPosition} />
-  <div>{ballXDirectionWithMomentum}</div>
 {/if}
+<Ball ball={ballPosition} />
+
+<div>{ballXDirectionWithMomentum}</div>
+<div>{ballXDirectionWithMomentum} = {ballXDirection} + {ballXMomentum}</div>
