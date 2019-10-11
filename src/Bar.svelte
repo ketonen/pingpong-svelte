@@ -5,8 +5,8 @@
 
 <style>
   div {
-    min-height: 10px;
-    max-width: 200px;
+    min-height: 15px;
+    max-width: 250px;
     position: fixed;
     width: 100%;
   }

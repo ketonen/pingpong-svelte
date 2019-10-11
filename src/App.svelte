@@ -3,19 +3,23 @@
   import GameMenu from "./GameMenu.svelte";
   import Ball from "./Ball.svelte";
 
-  let gameType = undefined;
-  let own = 0;
-  let enemy = 0;
-  let ArrowRightDown = false;
-  let ArrowLeftDown = false;
-  let SKeyDown = false;
-  let AKeyDown = false;
+  let gameType;
+  let own;
+  let enemy;
+  let ownKeys = {
+    rightDown: false,
+    leftDown: false
+  };
+  let enemyKeys = {
+    leftDown: false,
+    rightDown: false
+  };
 
   let ballPosition = { x: 50, y: 50 };
 
-  let ballXDirection = 0;
-  let ballXMomentum = 0;
-  $: ballXDirectionWithMomentum = ballXDirection + ballXMomentum;
+  let ballXDirection;
+  let ballXMomentum;
+  $: ballXDirectionWithMomentum = ballXDirection * ballXMomentum;
   let ballYDirection = 1;
 
   function callbackFunction(event) {
@@ -24,29 +28,37 @@
     createBall();
   }
 
+  let resetGame = () => {
+    gameType = undefined;
+    own = 0;
+    enemy = 0;
+    ballXDirection = 1;
+    ballXMomentum = 1;
+  };
+
   let initializeControls = () => {
     document.onkeydown = e => {
-      if (e.key === "ArrowRight") ArrowRightDown = true;
-      if (e.key === "ArrowLeft") ArrowLeftDown = true;
+      if (e.key === "ArrowRight") ownKeys.rightDown = true;
+      if (e.key === "ArrowLeft") ownKeys.leftDown = true;
       if (gameType === "local") {
-        if (e.key === "s") SKeyDown = true;
-        if (e.key === "a") AKeyDown = true;
+        if (e.key === "s") enemyKeys.rightDown = true;
+        if (e.key === "a") enemyKeys.leftDown = true;
       }
     };
     document.onkeyup = e => {
-      if (e.key === "ArrowRight") ArrowRightDown = false;
-      if (e.key === "ArrowLeft") ArrowLeftDown = false;
+      if (e.key === "ArrowRight") ownKeys.rightDown = false;
+      if (e.key === "ArrowLeft") ownKeys.leftDown = false;
       if (gameType === "local") {
-        if (e.key === "s") SKeyDown = false;
-        if (e.key === "a") AKeyDown = false;
+        if (e.key === "s") enemyKeys.rightDown = false;
+        if (e.key === "a") enemyKeys.leftDown = false;
       }
     };
 
     let clickTimer = () => {
-      if (ArrowRightDown) own++;
-      if (ArrowLeftDown) own--;
-      if (SKeyDown) enemy++;
-      if (AKeyDown) enemy--;
+      if (ownKeys.rightDown) own++;
+      if (ownKeys.leftDown) own--;
+      if (enemyKeys.rightDown) enemy++;
+      if (enemyKeys.leftDown) enemy--;
       clickTimeout = setTimeout(clickTimer, 10);
     };
     clickTimeout = setTimeout(clickTimer, 10);
@@ -71,6 +83,8 @@
 
   let createBall = () => {
     let ballTimer = () => {
+      if (gameType === undefined) return;
+
       ballPosition.x =
         ballPosition.x + ballXDirectionWithMomentum * ballSpeedMultiplier;
       ballPosition.y = ballPosition.y + ballYDirection * ballSpeedMultiplier;
@@ -79,8 +93,8 @@
         ballYDirection === 1 &&
         ballOverlapOwn(ballElement, document.getElementById("own"))
       ) {
-        if (ArrowRightDown) ballXMomentum = ballXMomentum + 0.5;
-        else if (ArrowLeftDown) ballXMomentum = ballXMomentum - 0.5;
+        if (ownKeys.rightDown) ballXMomentum = ballXMomentum + 0.5;
+        else if (ownKeys.leftDown) ballXMomentum = ballXMomentum - 0.5;
 
         ballYDirection = -ballYDirection;
         if (ballSpeedMultiplier < 10)
@@ -90,22 +104,22 @@
         ballYDirection === -1 &&
         ballOverlapEnemy(ballElement, document.getElementById("enemy"))
       ) {
-        if (AKeyDown) ballXMomentum = ballXMomentum - 0.5;
-        else if (SKeyDown) ballXMomentum = ballXMomentum + 0.5;
+        if (enemyKeys.leftDown) ballXMomentum = ballXMomentum - 0.5;
+        else if (enemyKeys.rightDown) ballXMomentum = ballXMomentum + 0.5;
 
         ballYDirection = -ballYDirection;
-        if (ballSpeedMultiplier < 10)
+        if (ballSpeedMultiplier < 7)
           ballSpeedMultiplier = ballSpeedMultiplier * 1.1;
       } else {
-        if (ballPosition.x - 5 < 0 || ballPosition.x + 20 > window.innerWidth) {
-          ballXDirection = 1;
-        }
+        if (ballPosition.x - 5 < 0) ballXDirection = 1;
+        else if (ballPosition.x + 50 > window.innerWidth) ballXDirection = -1;
+
         if (
           ballPosition.y - 5 < 0 ||
           ballPosition.y + 20 > window.innerHeight
         ) {
           ballYDirection = -ballYDirection;
-          gameType = undefined;
+          resetGame();
           clearTimeout(clickTimeout);
           clearTimeout(ballTimeout);
         }
@@ -115,6 +129,8 @@
     };
     ballTimeout = setTimeout(ballTimer, 10);
   };
+
+  resetGame();
 </script>
 
 {#if gameType === undefined}
@@ -123,5 +139,5 @@
   <Bar type={'own'} position={own} />
   <Bar type={'enemy'} position={enemy} />
   <Ball ball={ballPosition} />
-  <div>{ballPosition.x}</div>
+  <div>{ballXDirectionWithMomentum}</div>
 {/if}
