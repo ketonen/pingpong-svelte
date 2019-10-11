@@ -3,7 +3,7 @@
   import GameMenu from "./GameMenu.svelte";
   import Ball from "./Ball.svelte";
 
-  let gameType = "local";
+  let gameType = undefined;
   let own = 0;
   let enemy = 0;
   let ArrowRightDown = false;
@@ -12,12 +12,16 @@
   let AKeyDown = false;
 
   let ballPosition = { x: 50, y: 50 };
-  let ballXDirection = 1;
+
+  let ballXDirection = 0;
+  let ballXMomentum = 0;
+  $: ballXDirectionWithMomentum = ballXDirection + ballXMomentum;
   let ballYDirection = 1;
 
   function callbackFunction(event) {
     gameType = event.detail;
-    console.log(gameType);
+    initializeControls();
+    createBall();
   }
 
   let initializeControls = () => {
@@ -67,21 +71,34 @@
 
   let createBall = () => {
     let ballTimer = () => {
-      ballPosition.x = ballPosition.x + ballXDirection * ballSpeedMultiplier;
+      ballPosition.x =
+        ballPosition.x + ballXDirectionWithMomentum * ballSpeedMultiplier;
       ballPosition.y = ballPosition.y + ballYDirection * ballSpeedMultiplier;
       let ballElement = document.getElementById("ball");
       if (
-        (ballYDirection === 1 &&
-          ballOverlapOwn(ballElement, document.getElementById("own"))) ||
-        (ballYDirection === -1 &&
-          ballOverlapEnemy(ballElement, document.getElementById("enemy")))
+        ballYDirection === 1 &&
+        ballOverlapOwn(ballElement, document.getElementById("own"))
       ) {
+        if (ArrowRightDown) ballXMomentum = ballXMomentum + 0.5;
+        else if (ArrowLeftDown) ballXMomentum = ballXMomentum - 0.5;
+
+        ballYDirection = -ballYDirection;
+        if (ballSpeedMultiplier < 10)
+          ballSpeedMultiplier = ballSpeedMultiplier * 1.1;
+      }
+      if (
+        ballYDirection === -1 &&
+        ballOverlapEnemy(ballElement, document.getElementById("enemy"))
+      ) {
+        if (AKeyDown) ballXMomentum = ballXMomentum - 0.5;
+        else if (SKeyDown) ballXMomentum = ballXMomentum + 0.5;
+
         ballYDirection = -ballYDirection;
         if (ballSpeedMultiplier < 10)
           ballSpeedMultiplier = ballSpeedMultiplier * 1.1;
       } else {
         if (ballPosition.x - 5 < 0 || ballPosition.x + 20 > window.innerWidth) {
-          ballXDirection = -ballXDirection;
+          ballXDirection = 1;
         }
         if (
           ballPosition.y - 5 < 0 ||
@@ -98,9 +115,6 @@
     };
     ballTimeout = setTimeout(ballTimer, 10);
   };
-
-  initializeControls();
-  createBall();
 </script>
 
 {#if gameType === undefined}
@@ -109,4 +123,5 @@
   <Bar type={'own'} position={own} />
   <Bar type={'enemy'} position={enemy} />
   <Ball ball={ballPosition} />
+  <div>{ballPosition.x}</div>
 {/if}
