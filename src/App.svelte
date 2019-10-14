@@ -2,8 +2,9 @@
   import Bar from "./Bar.svelte";
   import GameMenu from "./GameMenu.svelte";
   import Ball from "./Ball.svelte";
+  import { spring } from "svelte/motion";
 
-let gameType;
+  let gameType;
   let own;
   let enemy;
   let ownKeys = {
@@ -16,6 +17,8 @@ let gameType;
   };
 
   let ballPosition;
+  let ballCoords;
+  $: ballCoords.set({ x: ballPosition.x + ballStep.x, y: ballPosition.y + ballStep.y })
 
   let ballStep = {
     x: 0,
@@ -30,6 +33,14 @@ let gameType;
 
   let resetGame = () => {
     ballPosition = { x: 50, y: 50 };
+
+    ballCoords = spring(
+      { x: ballPosition.x, y: ballPosition.y },
+      {
+        stiffness: 0.5,
+        damping: 1
+      }
+    );
     gameType = undefined;
     own = 0;
     enemy = 0;
@@ -88,7 +99,7 @@ let gameType;
   let ballTimeout;
   let clickTimeout;
 
-  let increateMomentum = (keys) => {
+  let increateMomentum = keys => {
     if (keys.rightDown) ballStep.x = ballStep.x + 1;
     else if (keys.leftDown) ballStep.x = ballStep.x - 1;
   };
@@ -109,7 +120,7 @@ let gameType;
       ) {
         ballStep.y = -ballStep.y;
         ballStep = increaseBallSpeed(ballStep);
-        increateMomentum(ownKeys)
+        increateMomentum(ownKeys);
       }
       if (
         ballStep.y < 0 &&
@@ -120,7 +131,7 @@ let gameType;
       ) {
         ballStep.y = -ballStep.y;
         ballStep = increaseBallSpeed(ballStep);
-        increateMomentum(enemyKeys)
+        increateMomentum(enemyKeys);
       } else {
         if (
           (ballStep.x < 0 && ballElement.left <= 0) ||
@@ -151,4 +162,4 @@ let gameType;
   <Bar type={'own'} position={own} />
   <Bar type={'enemy'} position={enemy} />
 {/if}
-<Ball ball={ballPosition} />
+<Ball coords={ballCoords} />

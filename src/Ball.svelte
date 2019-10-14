@@ -1,16 +1,19 @@
 <script>
-  export let ball;
+  import { spring } from "svelte/motion";
+  export let coords;
+  let size = spring(10);
 </script>
 
 <style>
-  #ball {
-    height: 25px;
-    width: 25px;
-    background-color: black;
-    position: absolute;
-    border-radius: 50%;
-    display: inline-block;
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+  circle {
+    fill: black;
   }
 </style>
 
-<span id="ball" style="left:{ball.x}px;top:{ball.y}px" />
+<svg>
+  <circle id="ball" cx={$coords.x} cy={$coords.y} r={$size} />
+</svg>
