@@ -3,7 +3,7 @@
   import GameMenu from "./GameMenu.svelte";
   import Ball from "./Ball.svelte";
 
-  let gameType;
+let gameType;
   let own;
   let enemy;
   let ownKeys = {
@@ -29,7 +29,7 @@
   }
 
   let resetGame = () => {
-    ballPosition = { x: 50, y: 50 }
+    ballPosition = { x: 50, y: 50 };
     gameType = undefined;
     own = 0;
     enemy = 0;
@@ -88,6 +88,11 @@
   let ballTimeout;
   let clickTimeout;
 
+  let increateMomentum = (keys) => {
+    if (keys.rightDown) ballStep.x = ballStep.x + 1;
+    else if (keys.leftDown) ballStep.x = ballStep.x - 1;
+  };
+
   let createBall = () => {
     let ballTimer = () => {
       if (gameType === undefined) return;
@@ -104,10 +109,7 @@
       ) {
         ballStep.y = -ballStep.y;
         ballStep = increaseBallSpeed(ballStep);
-        if(ownKeys.rightDown)
-          ballStep.x = ballStep.x + 1
-        else if(ownKeys.leftDown)
-          ballStep.x = ballStep.x - 1
+        increateMomentum(ownKeys)
       }
       if (
         ballStep.y < 0 &&
@@ -118,16 +120,13 @@
       ) {
         ballStep.y = -ballStep.y;
         ballStep = increaseBallSpeed(ballStep);
-        if(enemyKeys.rightDown)
-          ballStep.x = ballStep.x + 1
-        else if(enemyKeys.leftDown)
-          ballStep.x = ballStep.x - 1
+        increateMomentum(enemyKeys)
       } else {
-        if (ballStep.x < 0 && ballElement.left <= 0) {
-          console.log("HIT LEFT WALL");
-          ballStep.x = -ballStep.x;
-        } else if (ballStep.x > 0 && ballElement.right >= window.innerWidth) {
-          console.log("HIT RIGHT WALL");
+        if (
+          (ballStep.x < 0 && ballElement.left <= 0) ||
+          (ballStep.x > 0 && ballElement.right >= window.innerWidth)
+        ) {
+          console.log("HIT WALL");
           ballStep.x = -ballStep.x;
         }
 
