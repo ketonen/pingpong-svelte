@@ -15,15 +15,12 @@
     rightDown: false
   };
 
-  let ballPosition = { x: 50, y: 50 };
-  let ballSpeedMultiplier;
+  let ballPosition;
 
-  let ballXDirection;
-  let ballXMomentum;
-
-
-  $: ballXDirectionWithMomentum = ballXDirection + ballXMomentum;
-  let ballYDirection = 1;
+  let ballStep = {
+    x: 0,
+    y: 2
+  };
 
   function callbackFunction(event) {
     gameType = event.detail;
@@ -32,12 +29,10 @@
   }
 
   let resetGame = () => {
+    ballPosition = { x: 50, y: 50 }
     gameType = undefined;
-    ballSpeedMultiplier = 3;
     own = 0;
     enemy = 0;
-    ballXDirection = 1;
-    ballXMomentum = 0;
   };
 
   let initializeControls = () => {
@@ -63,9 +58,9 @@
       if (ownKeys.leftDown) own--;
       if (enemyKeys.rightDown) enemy++;
       if (enemyKeys.leftDown) enemy--;
-      clickTimeout = setTimeout(clickTimer, 10);
+      clickTimeout = setTimeout(clickTimer, 20);
     };
-    clickTimeout = setTimeout(clickTimer, 10);
+    clickTimeout = setTimeout(clickTimer, 20);
   };
 
   let ballOverlapOwn = (b, r) => {
@@ -76,77 +71,67 @@
     return b.right >= r.left && b.left <= r.right && b.top <= r.bottom;
   };
 
+  let increaseBallSpeed = ballStep => {
+    let increateSpeed = axisStep => {
+      if (Math.abs(axisStep) >= 7) return axisStep;
+      if (axisStep < 0) return axisStep - 1;
+      if (axisStep > 0) return axisStep + 1;
+      return axisStep;
+    };
+
+    ballStep.x = increateSpeed(ballStep.x);
+    ballStep.y = increateSpeed(ballStep.y);
+
+    return ballStep;
+  };
+
   let ballTimeout;
   let clickTimeout;
-
-  let calculateMomentum = (keys, ballXDirection, ballXMomentum) => {
-    if (keys.rightDown) {
-      if (ballXDirection === 1) {
-        return ballXMomentum * -1 + 0.5;
-      } else return ballXMomentum - 0.5;
-    } else if (keys.leftDown) {
-      if (ballXDirection === -1) {
-        return ballXMomentum * -1 - 0.5;
-      } else return ballXMomentum + 0.5;
-    }
-
-    return ballXMomentum;
-  };
 
   let createBall = () => {
     let ballTimer = () => {
       if (gameType === undefined) return;
 
-      ballPosition.x =
-        ballPosition.x + ballXDirectionWithMomentum * ballSpeedMultiplier;
-      ballPosition.y = ballPosition.y + ballYDirection * ballSpeedMultiplier;
+      ballPosition.x = ballPosition.x + ballStep.x;
+      ballPosition.y = ballPosition.y + ballStep.y;
       let ballElement = document.getElementById("ball").getBoundingClientRect();
       if (
-        ballYDirection === 1 &&
+        ballStep.y > 0 &&
         ballOverlapOwn(
           ballElement,
           document.getElementById("own").getBoundingClientRect()
         )
       ) {
-        ballXMomentum = calculateMomentum(
-          ownKeys,
-          ballXDirection,
-          ballXMomentum
-        );
-
-        ballYDirection = -ballYDirection;
-        if (ballSpeedMultiplier < 10)
-          ballSpeedMultiplier = ballSpeedMultiplier * 1.1;
+        ballStep.y = -ballStep.y;
+        ballStep = increaseBallSpeed(ballStep);
+        if(ownKeys.rightDown)
+          ballStep.x = ballStep.x + 1
+        else if(ownKeys.leftDown)
+          ballStep.x = ballStep.x - 1
       }
       if (
-        ballYDirection === -1 &&
+        ballStep.y < 0 &&
         ballOverlapEnemy(
           ballElement,
           document.getElementById("enemy").getBoundingClientRect()
         )
       ) {
-        ballXMomentum = calculateMomentum(
-          enemyKeys,
-          ballXDirection,
-          ballXMomentum
-        );
-
-        ballYDirection = -ballYDirection;
-        if (ballSpeedMultiplier < 7)
-          ballSpeedMultiplier = ballSpeedMultiplier * 1.1;
+        ballStep.y = -ballStep.y;
+        ballStep = increaseBallSpeed(ballStep);
+        if(enemyKeys.rightDown)
+          ballStep.x = ballStep.x + 1
+        else if(enemyKeys.leftDown)
+          ballStep.x = ballStep.x - 1
       } else {
-        if (ballElement.left <= 0) {
+        if (ballStep.x < 0 && ballElement.left <= 0) {
           console.log("HIT LEFT WALL");
-          ballXDirection = 1;
-          ballXMomentum = ballXMomentum * -1;
-        } else if (ballElement.right >= window.innerWidth) {
+          ballStep.x = -ballStep.x;
+        } else if (ballStep.x > 0 && ballElement.right >= window.innerWidth) {
           console.log("HIT RIGHT WALL");
-          ballXDirection = -1;
-          ballXMomentum = ballXMomentum * -1;
+          ballStep.x = -ballStep.x;
         }
 
         if (ballElement.top <= 0 || ballElement.bottom >= window.innerHeight) {
-          ballYDirection = -ballYDirection;
           resetGame();
           clearTimeout(clickTimeout);
           clearTimeout(ballTimeout);
@@ -168,6 +153,3 @@
   <Bar type={'enemy'} position={enemy} />
 {/if}
 <Ball ball={ballPosition} />
-
-<div>{ballXDirectionWithMomentum}</div>
-<div>{ballXDirectionWithMomentum} = {ballXDirection} + {ballXMomentum}</div>

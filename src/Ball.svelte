@@ -1,10 +1,5 @@
 <script>
   export let ball;
-
-  // $: () => {
-  //   document.getElementById('own').left
-  //   document.getElementById('enemy').left
-  // }
 </script>
 
 <style>
